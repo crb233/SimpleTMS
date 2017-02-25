@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title> JSON Displayer </title>
+		<script src='http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js'> </script>
+		<style>
+			* {
+				font-family: 'Lucida Console', Monaco, monospace;
+			}
+			div.fold {
+				padding-top: 4px;
+				padding-left: 24px;
+			}
+			button.fold {
+				color : #000;
+				background-color : #fff;
+				font-family: 'Lucida Console', Monaco, monospace;
+				border: none;
+				font-weight : bolder;
+				text-decoration : none;
+			}
+			button.fold:hover {
+				cursor : pointer;
+			}
+		</style>
+		<script>
+			
+			// returns foldable HTML from a JSON object
+			// returns the HTML as a string
+			function create_fold(json) {
+				return fold_obj(json).join('');
+			}
+			
+			// creates foldable HTML from a JSON object
+			// returns an array of strings containing the HTML
+			function fold_obj(json) {
+				if (json === {}) {
+					return ['<div class="fold">{}</div>'];
+				}
+				
+				var strings = [];
+				strings.push('{<button class="fold">-</button><span class="fold">');
+				
+				// for each key in the object
+				Object.keys(json).forEach(function(key, i) {
+					strings.push('<div class="fold">"' + key + '":');
+					var val = json[key];
+					
+					// value is an array
+					if (val instanceof Array) {
+						
+						// empty array
+						if (val === []) {
+							strings.push('[]');
+							
+						// non-empty array
+						} else {
+							strings.push('[<button class="fold">-</button><span class="fold">');
+							val.forEach(function(elem) {
+								strings.push('<div class="fold">');
+								strings = strings.concat(fold_obj(elem));
+								strings.push('</div>');
+							});
+							strings.push('</span>]');
+						}
+						
+					// value is a string
+					} else if (typeof val === 'string' || val instanceof String) {
+						strings.push('"' + val + '"');
+						
+					// value is a json object
+					} else {
+						strings = strings.concat(fold_obj(val));
+					}
+					
+					strings.push("</div>");
+				});
+				
+				strings.push("</span>}");
+				return strings;
+			}
+			
+			// creates foldable HTML from a JSON object
+			// returns an array of strings containing the HTML
+			function fold_obj_2(obj) {
+				var strings;
+				
+				// null
+				if (obj === null) {
+					return 'null';
+					
+				// true boolean
+				} else if (obj === true) {
+					return 'true';
+					
+				// false boolean
+				} else if (obj === false) {
+					return 'false';
+					
+				// string
+				} else if (typeof obj === 'number') {
+					return '' + obj;
+					
+				// string
+				} else if (typeof obj === 'string' || obj instanceof String) {
+					return '"' + obj + '"';
+					
+				// array
+				} else if (obj instanceof Array) {
+					if (obj.length === 0) {
+						return '[]';
+					}
+					
+					strings = [];
+					strings.push('[<button class="fold">-</button><span class="fold">');
+					obj.forEach(function(elem) {
+						strings.push('<div class="fold">');
+						strings.push(fold_obj_2(elem));
+						strings.push('</div>');
+					});
+					strings.push('</span>]');
+					return strings.join('');
+					
+				// empty object
+				} else if (obj === {}) {
+					return '{}';
+					
+				// non-empty object
+				} else {
+					strings = [];
+					strings.push('{<button class="fold">-</button><span class="fold">');
+					Object.keys(obj).forEach(function(key) {
+						strings.push('<div class="fold">"' + key + '":');
+						strings.push(fold_obj_2(obj[key]));
+						strings.push('</div>');
+					});
+					strings.push('</span>}');
+					return strings.join('');
+				}
+			}
+			
+			function setup_folds() {
+				$('button.fold').click(function() {
+					var e = $(this).next('span');
+					if (e.is(':visible')) {
+						$(this).html('+');
+						e.hide();
+					} else {
+						$(this).html('-');
+						e.show();
+					}
+				});
+			}
+			
+			function get_data() {
+				function success(data) {
+					$('#response').html(fold_obj_2(JSON.parse(data)));
+					setup_folds();
+				}
+				
+				function error(xhr, opts, error) {
+					$('#response').html('Error: ' + xhr.responseText);
+				}
+				
+				$.ajax({
+					type : 'GET',
+					url : './data',
+					contentType : 'application/json; charset=utf-8',
+					data : {},
+					dataType : 'html',
+					success : success,
+					error : error
+				});
+			}
+			
+			$(document).ready(function() {
+				get_data();
+			});
+			
+		</script>
+	</head>
+	<body>
+		
+		<div id='response'>
+		</div>
+		
+	</body>
+</html>
