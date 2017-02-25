@@ -9,4 +9,4 @@ Scrapes Drexel's WebTMS for class information and stores it in JSON
 3. To start the server:
   - on port 8080, run `node app.js`
   - on port `n`, run `node app.js n`
-4. Navigate to `localhost:n/display_json.html` where `n` is the port number
+4. In a modern browser, navigate to `localhost:n/display_json.html` where `n` is the port number

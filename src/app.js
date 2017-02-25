@@ -153,13 +153,23 @@ function load_data() {
 var app = express();
 load_data();
 
-// serve static pages
-app.use(express.static(__dirname + '/public'));
+// set the server port
+var port = 8080;
+if (process.argv.length > 2 && ! isNaN(process.argv[2])) {
+	var val = parseInt(process.argv[2]);
+	if (0 <= val && val <= 65535) {
+		port = val;
+	}
+}
 
 // start the server
 app.listen(port, function() {
 	console.log('Running on port ' + port + '...');
+	start_command_line();
 });
+
+// serve static pages in the public directory
+app.use(express.static(__dirname + '/public'));
 
 // declare request routes
 app.get('/data', function(req, res) {
@@ -169,11 +179,61 @@ app.get('/data', function(req, res) {
 	res.end(JSON.stringify(tms_data));
 });
 
-// set the server port
-var port = 8080;
-if (process.argv.length > 2 && ! isNaN(process.argv[2])) {
-	var val = parseInt(process.argv[2]);
-	if (0 <= val && val <= 65535) {
-		port = val;
+// add a command line listener
+function start_command_line() {
+	
+	// prompt string
+	var prompt = 'localhost:' + port + '> ';
+	process.stdout.write(prompt);
+	
+	// command line listener callback function
+	process.openStdin().addListener('data', function(str) {
+		var cmd = parse_command(str);
+		console.log(cmd);
+		
+		// exit command
+		if (cmd.base == 'exit') {
+			console.log('Exiting...');
+			process.exit();
+			
+		// generate data command
+		} else if (cmd.base == 'gen') {
+			if (is_data_stale() || cmd.flags.f) {
+				console.log('generate_data();');
+			}
+		}
+		
+		process.stdout.write(prompt);
+	});
+	
+	// parses simple commands
+	function parse_command(str) {
+		var words = str.toString().trim().split(' ');
+		var base = words[0];
+		var args = [];
+		var flags = {};
+		
+		var i = 1;
+		while (i < words.length && words[i][0] != '-') {
+			args.push(words[i]);
+			i++;
+		}
+		
+		while (i < words.length) {
+			if (words[i][0] == '-') {
+				for (var c = 1; c < words[i].length; c++) {
+					flags[words[i][c]] = true;
+				}
+			}
+			
+			i++;
+		}
+		
+		return {
+			'base' : base,
+			'args' : args,
+			'flags' : flags
+		};
 	}
+	
 }
