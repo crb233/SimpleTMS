@@ -5,7 +5,6 @@
 
 var fs = require('fs');
 var express = require('express');
-var scraper = new (require('./scraper'))();
 
 
 
@@ -18,9 +17,9 @@ var scraper = new (require('./scraper'))();
 var max_age = 24 * 60 * 60 * 1000;
 
 // local file names
-var log_file = './data.log';
-var data_file = './data.json';
-var backup_data_file = './data.json.bak';
+var log_file = __dirname + '/data.log';
+var data_file = __dirname + '/data.json';
+var backup_data_file = __dirname + '/data.json.bak';
 
 
 
@@ -60,9 +59,10 @@ function is_data_stale() {
 // scrapes TMS for new data
 function generate_data() {
 	// run scraper to generate tms data
+	var scraper = new (require(__dirname + '/scraper'))();
 	scraper.run();
 	console.log('Generating new data');
-
+	
 	// when scraper emits data
 	scraper.on('tms_data', function(new_data) {
 		tms_data = new_data;
@@ -89,7 +89,7 @@ function save_data() {
 			} else {
 				// write to the log file
 				last = Date.now();
-				fs.writeFile(log_file, '' +last, function(err) {
+				fs.appendFile(log_file, '\n' + last, function(err) {
 					if (err) {
 						console.log(err);
 						console.log('Failed to write to log file');
@@ -105,7 +105,8 @@ function save_data() {
 // download data from the local file
 function load_data() {
 	try {
-		last = parseInt(fs.readFileSync("./data.log"));
+		var log = String(fs.readFileSync(log_file)).split('\n');
+		last = parseInt(log[log.length - 1]);
 	} catch (e) {
 		console.log(e);
 		last = 0;
@@ -148,12 +149,17 @@ function load_data() {
 // SERVER //
 //--------//
 
-// initialize server and data
+// initialize server and load data
 var app = express();
 load_data();
 
 // serve static pages
-app.use(express.static('public'));
+app.use(express.static(__dirname + '/public'));
+
+// start the server
+app.listen(port, function() {
+	console.log('Running on port ' + port + '...');
+});
 
 // declare request routes
 app.get('/data', function(req, res) {
@@ -171,8 +177,3 @@ if (process.argv.length > 2 && ! isNaN(process.argv[2])) {
 		port = val;
 	}
 }
-
-// start the server
-app.listen(port, function() {
-	console.log('Running on port ' + port + '...');
-});

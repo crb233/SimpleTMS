@@ -2,16 +2,15 @@
 // required modules
 var request = require('request');
 var cheerio = require('cheerio');
-var utils = require('util');
-var EventEmitter = require('events').EventEmitter;
 
 
 
 // this Scraper module inherits from EventEmitter
+var EventEmitter = require('events').EventEmitter;
 function Scraper() {
 	EventEmitter.call(this);
 }
-utils.inherits(Scraper, EventEmitter);
+require('util').inherits(Scraper, EventEmitter);
 module.exports = Scraper;
 
 
@@ -20,10 +19,11 @@ module.exports = Scraper;
 var base_url = 'https://duapp2.drexel.edu';
 var home_url = 'https://duapp2.drexel.edu/webtms_du/app';
 
+
+
 // start scraping webtms
 Scraper.prototype.run = function() {
 	var self = this;
-	
 	var terms = [];
 	var reqs = 0;
 	get_terms();
@@ -126,7 +126,6 @@ Scraper.prototype.run = function() {
 						prev.sections.push(make_section(e));
 					} else {
 						var course = {
-							'subject_code' : e.children[1].children[0].data,
 							'course_num' : e.children[3].children[0].data,
 							'sections' : []
 						};
@@ -142,14 +141,19 @@ Scraper.prototype.run = function() {
 			}
 		});
 	}
-
+	
 	function make_section(elem) {
-		return {
-			'instr_type' : elem.children[5].children[0].data,
-			'instr_method' : elem.children[9].children[0].data,
-			'section_num' : elem.children[11].children[0].data,
-			'crn' : elem.children[13].find('a').children[0].data
-		};
+		try {
+			return {
+				'instr_type' : elem.children[5].children[0].data,
+				'instr_method' : elem.children[9].children[0].data,
+				'section_num' : elem.children[11].children[0].data,
+				'crn' : elem.children[13].children[0].children[0].children[0].data
+			};
+		} catch (e) {
+			console.log(e);
+			return {};
+		}
 	}
-
+	
 };
